@@ -1,9 +1,8 @@
 '*  ==========================================================================
-'*  Script name: RaiseErr.vbs
-'*  Created on:  2014-08-04
-'*  Author:      John Gantner
-'*  Purpose:     Demonstrate use of On Error and Err.Raise
-'*               with custom errors
+'*  Script name : RaiseErr.vbs
+'*  Created on  : 2014-08-04
+'*  Author      : John Gantner
+'*  Purpose     : Demonstrate use of On Error and Err.Raise with custom errors
 '*  --------------------------------------------------------------------------
 Option Explicit
 
@@ -25,7 +24,7 @@ Sub Main()
 
     Const cProcess = "Main"
 
-    RaiseACriticalError
+    RaiseAnError
     If Err.Number <> 0 Then DisplayClearError
 
     Ouch
@@ -34,7 +33,7 @@ Sub Main()
     DoSomethingStupid
     If Err.Number <> 0 Then DisplayError : Err.Clear
 
-    RaiseErr ERR_OH_NO, cProcess
+    RaiseErr ERR_OH_NO, cProcess, "it's devo!"
     If VBError(Err.Number) = ERR_OH_NO Then
         DisplayClearError
         Exit Sub
@@ -42,13 +41,13 @@ Sub Main()
 
 End Sub
 
-Sub RaiseACriticalError()
+Sub RaiseAnError()
     ' Any errors handled by calling process
     On Error Goto 0
 
-    Const cProcess = "RaiseACriticalError"
+    Const cProcess = "RaiseAnError"
 
-    RaiseErr ERR_BAAH, cProcess
+    RaiseErr ERR_BAAH, cProcess, "that was unexpected!"
 
 End Sub
 
@@ -58,7 +57,7 @@ Sub Ouch()
 
     Const cProcess = "Ouch"
 
-    RaiseErr ERR_OUCH, cProcess
+    RaiseErr ERR_OUCH, cProcess, "that really hurt!"
 
 End Sub
 
@@ -96,18 +95,20 @@ End Function
 '*  Subroutine  : RaiseErr
 '*  Description : Raise a custom error
 '*  --------------------------------------------------------------------------
-Sub RaiseErr(ByVal e, ByVal strSource)
+Sub RaiseErr(ByVal e, ByVal sSource, ByVal sMsg)
 
-    Dim strMsg
+    Dim sDescription
 
     Select Case e
-    Case ERR_BAAH  strMsg = "baahh"
-    Case ERR_OH_NO strMsg = "oh no"
-    Case ERR_OUCH  strMsg = "ouch!"
-    Case Else      strMsg = "x"
+    Case ERR_BAAH  sDescription = "baahh!"
+    Case ERR_OH_NO sDescription = "oh no!"
+    Case ERR_OUCH  sDescription = "ouch!"
+    Case Else      sDescription = ""
     End Select
 
-    Err.Raise COMError(e), strSource, strMsg
+    If Len(sMsg) > 0 Then sDescription = sDescription & " " & sMsg
+
+    Err.Raise COMError(e), sSource, sDescription
 
 End Sub
 
@@ -122,9 +123,10 @@ Sub DisplayError()
     If Err.Number = 0 Then Exit Sub
 
     arrMsg = Array( _
-        "Error: " & CStr(Err.Number), _
-        "Description: " & Err.Description, _
-        "Source: " & Err.Source)
+        "Error (dec): " & Err.Number, _
+        "Error (hex): &H" & Hex(Err.Number), _
+        "Source: " & Err.Source, _
+        "Description: " & Err.Description)
 
     MsgBox Join(arrMsg, vbCrLf), vbExclamation, WScript.ScriptName
 
