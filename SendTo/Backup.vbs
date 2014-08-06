@@ -10,15 +10,84 @@ Sub Main
 
     arrPaths = GetFilePaths
 
-    For each path in arrPaths
+    If UBound(arrPaths) < 0 Then
 
-        MsgBox path, vbInformation, GetDateStamp(path)
+        MsgBox "Usage:" & vbcrlf & vbcrlf & Wscript.ScriptName & " Filename", vbInformation, Wscript.ScriptName
 
-    Next
+    Else
+
+        For each path in arrPaths
+
+            BackupFile path
+
+        Next
+
+    End If
 
 End Sub
 
 '* ROUTINES ==================================================================
+
+Sub BackupFile(pathSrc)
+
+    Const ReadOnly = 1
+
+    Dim fso, f, dtm
+    Dim nameDestFile, pathDestFolder, pathDest, extn
+
+    Set fso = WScript.CreateObject("Scripting.FileSystemObject")
+
+    If fso.FileExists(pathSrc) Then
+        Set f = fso.GetFile(pathSrc)
+        dtm = f.DateLastModified
+    Else
+        ' file does not exist!
+        Exit Sub
+
+    End If
+
+    pathDestFolder = fso.GetParentFolderName(pathSrc) & "\" & fso.GetBaseName(WScript.ScriptName)
+
+    If Not fso.FolderExists(pathDestFolder) Then
+        fso.CreateFolder pathDestFolder
+    End If
+
+    If Not fso.FolderExists(pathDestFolder) Then
+        ' backup folder could not be created!
+        Exit Sub
+
+    End If
+
+    extn = fso.GetExtensionName(pathSrc)
+    If Len(extn) > 0 Then extn = "."  & extn
+
+    nameDestFile = fso.GetBaseName(pathSrc) & "_" & GetDateStamp(dtm) & extn
+    pathDest = pathDestFolder & "\" & nameDestFile
+
+    If fso.FileExists(pathDest) Then
+        MsgBox "file already exists: " & pathDest
+        Exit Sub
+    Else
+        fso.CopyFile pathSrc, pathDest, false
+
+        Set f = fso.GetFile(pathDest)
+        If Not (f.attributes And ReadOnly) Then
+            ' set read-only file attribute
+            f.attributes = f.attributes + ReadOnly
+        End If
+    End If
+
+End Sub
+
+'-----------------------------------------------------------------------------
+
+Sub DisplayError(msg)
+
+    MsgBox msg, vbExclamation, Wscript.ScriptName
+
+End Sub
+
+'-----------------------------------------------------------------------------
 
 Function GetFilePaths
 
@@ -48,16 +117,13 @@ Function GetFilePaths
 
 End Function
 
-Function GetDateStamp(path)
-    Dim fso, f, dtm, dateStamp
-    Set fso = WScript.CreateObject("Scripting.FileSystemObject")
+'-----------------------------------------------------------------------------
 
-    If fso.FileExists(path) Then
-        Set f = fso.GetFile(path)
-        dtm = f.DateLastModified
-    End If
+Function GetDateStamp(dtm)
 
-    dateStamp = Year(dtm) & _
+    On Error Resume Next
+
+    GetDateStamp = CStr(Year(dtm)) & _
       LZ(Month(dtm)) _
     & LZ(Day(dtm)) _
     & "_" _
@@ -65,15 +131,16 @@ Function GetDateStamp(path)
     & LZ(Minute(dtm)) _
     & LZ(Second(dtm))
 
-    GetDateStamp = dateStamp
-
 End Function
 
-Function LZ(ByVal Number)
-  If Number < 10 Then
-    LZ = "0" & CStr(Number)
-  Else
-    LZ = CStr(Number)
-  End If
-End Function
+'-----------------------------------------------------------------------------
 
+Function LZ(ByVal number)
+
+    If number < 10 Then
+        LZ = "0" & CStr(number)
+    Else
+        LZ = CStr(number)
+    End If
+
+End Function
