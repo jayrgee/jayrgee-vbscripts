@@ -131,7 +131,7 @@ Function ExportVBComponents(ByRef colVbc, ByVal pathRoot)
         oVBC.Export pathRoot & "\" & oVBC.Name & GetVBExtension(oVBC.Type)
         iX = iX + 1
     Next 'oVBC
-    
+
     ExportVBComponents = iX
 
 End Function
@@ -146,6 +146,7 @@ Sub ExportVBAFromXLS(ByVal strPathFile)
     Dim dateStamp
     Dim strExportRoot 'As String
 
+    iCount = 0
     dateStamp = GetDateStamp(strPathFile)
 
     Set oApp = CreateObject("Excel.Application")
@@ -156,27 +157,35 @@ Sub ExportVBAFromXLS(ByVal strPathFile)
 
     strExportRoot = oWbk.Path & "\" & Replace(oWbk.Name, ".", "_") & "_" & dateStamp
 
-    Set colVBC = oWbk.VBProject.VBComponents
+    On Error Resume Next
 
-    If colVBC.Count > 0 Then
-        If CreateNewFolder(strExportRoot) Then
-            iCount = ExportVBComponents(colVBC, strExportRoot)
-        Else
-            MsgBox "Could not create sub-folder: " & vbCrLf & strExportRoot, vbCritical, cPROCESS
-        End If
+    Set colVBC = oWbk.VBProject.VBComponents
+    If Err.Number <> 0 Then
+        ReportError
+
     Else
-        MsgBox "No VBA to export from this file: " & vbCrLf & strPathFile, vbExclamation, cPROCESS
+
+        If colVBC.Count > 0 Then
+            If CreateNewFolder(strExportRoot) Then
+                iCount = ExportVBComponents(colVBC, strExportRoot)
+            Else
+                MsgBox "Could not create sub-folder: " & vbCrLf & strExportRoot, vbCritical, cPROCESS
+            End If
+        Else
+            MsgBox "No VBA to export from this file: " & vbCrLf & strPathFile, vbExclamation, cPROCESS
+        End If
+
     End If
 
     Set colVBC = Nothing
-    
+
     oWbk.Close
     Set oWbk = Nothing
 
     oApp.Quit
     Set oApp = Nothing
 
-    If iX > 0 Then
+    If iCount > 0 Then
         CopyFileToFolder strPathFile, strExportRoot
         MsgBox CStr(iCount + 1) & " file(s) exported to " & strExportRoot, vbInformation, cPROCESS
     End If
@@ -303,12 +312,12 @@ Sub ReportError()
 
     Dim errType
     Dim arrMsg
-    
+
     Select Case (Err.Number - vbObjectError)
     Case 1050 ErrType = vbCritical
     Case Else ErrType = vbExclamation
     End Select
-    
+
     arrMsg = Array( _
         "Error: " & CStr(Err.Number), _
         "Description: " & Err.Description, _
