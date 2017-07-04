@@ -92,7 +92,7 @@ Sub Main
 	tag=""
 	If gblnAddTagToFileName Then 
 		tag = inputbox("Enter the tag to set on the files to be backed-up!", "tag a bkp file", "<tag>")
-		wscript.echo "tag: " & tag
+		'wscript.echo "tag: " & tag
 		If tag = "<tag>" Then tag=""
 		If tag <> "" Then tag="_" & tag
 	End If
